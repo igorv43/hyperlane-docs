@@ -420,8 +420,16 @@ The script instantiates **11 contracts** in the following order:
   "owner": "terra10d07y265gmmuvt4z0w9aw880jnsr700juxf95n",
   "isms": [
     {
+      "domain": 1,
+      "address": "terra1e7sgpxr50rlxarvjt07n0pxgxre5fcgannucx37309446x5pwacs8qhryp"
+    },
+    {
       "domain": 56,
-      "address": "terra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqynf7kp"
+      "address": "terra1m9wuxnx2vkv9duapcu9xfdnm9v5cv6eg35yzxmhgeuvch4y24aws8r49c9"
+    },
+    {
+      "domain": 1399811149,
+      "address": "terra13l8gwanf37938wgfv5yktmfzxjwaj4ysn4gl96vj78xcqqxlcrgsll77zu"
     }
   ]
 }
@@ -430,10 +438,13 @@ The script instantiates **11 contracts** in the following order:
 **Parameter Explanation:**
 - `owner` (string): Address that can add/remove ISM routes
 - `isms` (array): List of domain → ISM mappings
-  - `domain` (u32): Source chain domain ID (56 = BSC)
+  - `domain` (u32): Source chain domain ID
+    - Domain 1 = Ethereum
+    - Domain 56 = BSC (Binance Smart Chain)
+    - Domain 1399811149 = Solana
   - `address` (string): ISM address to be used for messages from this domain
 
-**Note:** Domain 56 = BSC (Binance Smart Chain)
+**Note:** Each chain has its own ISM Multisig with specific validators and threshold.
 
 **Code ID:** `6`
 
@@ -722,15 +733,51 @@ After instantiation, contracts need to be configured. Since the **owner/admin is
 
 ### 📝 Execution Messages - Detailed Explanation
 
-The governance proposal executes **6 messages** to configure the Hyperlane system:
+The governance proposal executes **8 messages** to configure the Hyperlane system with support for **3 chains** (Ethereum, BSC, and Solana):
 
 ---
 
-#### MESSAGE 1: Configure ISM Multisig Validators
+#### MESSAGE 1: Configure ISM Multisig Validators for Ethereum
+
+**Objective:** Defines the set of validators that will sign messages from domain 1 (Ethereum). The threshold of 6 means at least 6 of 9 validators must sign for a message to be considered valid.
+
+**Target Contract:** ISM Multisig (`terra1e7sgpxr50rlxarvjt07n0pxgxre5fcgannucx37309446x5pwacs8qhryp`)
+
+**Executed Message:**
+```json
+{
+  "set_validators": {
+    "domain": 1,
+    "threshold": 6,
+    "validators": [
+      "03c842db86a6a3e524d4a6615390c1ea8e2b9541",
+      "94438a7de38d4548ae54df5c6010c4ebc5239eae",
+      "5450447aee7b544c462c9352bef7cad049b0c2dc",
+      "b3ac35d3988bca8c2ffd195b1c6bee18536b317b",
+      "b683b742b378632a5f73a2a5a45801b3489bba44",
+      "3786083ca59dc806d894104e65a13a70c2b39276",
+      "4f977a59fdc2d9e39f6d780a84d5b4add1495a36",
+      "29d783efb698f9a2d3045ef4314af1f5674f52c5",
+      "36a669703ad0e11a0382b098574903d2084be22c"
+    ]
+  }
+}
+```
+
+**Parameter Explanation:**
+- `domain` (u32): Ethereum domain ID in Hyperlane protocol (1 = Ethereum)
+- `threshold` (u8): Minimum number of signatures required (6 of 9 validators)
+- `validators` (HexBinary array): Array of 9 hexadecimal addresses (20 bytes each) of validators
+
+**Security:** With 6/9 threshold, the system tolerates up to 3 validators offline or malicious while still validating messages.
+
+---
+
+#### MESSAGE 2: Configure ISM Multisig Validators for BSC
 
 **Objective:** Defines the set of validators that will sign messages from domain 56 (BSC). The threshold of 2 means at least 2 of 6 validators must sign for a message to be considered valid.
 
-**Target Contract:** ISM Multisig (`terra1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqynf7kp`)
+**Target Contract:** ISM Multisig (`terra1m9wuxnx2vkv9duapcu9xfdnm9v5cv6eg35yzxmhgeuvch4y24aws8r49c9`)
 
 **Executed Message:**
 ```json
@@ -755,18 +802,47 @@ The governance proposal executes **6 messages** to configure the Hyperlane syste
 - `threshold` (u8): Minimum number of signatures required (2 of 6 validators)
 - `validators` (HexBinary array): Array of 6 hexadecimal addresses (20 bytes each) of validators
 
-**Configured Validators:**
-Each validator is an off-chain node that monitors messages and provides signatures. Addresses are hexadecimal representations (without 0x prefix) of Ethereum-style addresses.
-
 **Security:** With 2/6 threshold, the system tolerates up to 4 validators offline while still validating messages.
 
 ---
 
-#### MESSAGE 2: Configure Remote Gas Data in IGP Oracle
+#### MESSAGE 3: Configure ISM Multisig Validators for Solana
 
-**Objective:** Defines token exchange rate and gas price for domain 56 (BSC). This allows IGP to calculate how much gas to charge on the source chain (Terra) to cover execution costs on the destination chain (BSC).
+**Objective:** Defines the set of validators that will sign messages from domain 1399811149 (Solana). The threshold of 3 means at least 3 of 5 validators must sign for a message to be considered valid.
 
-**Target Contract:** IGP Oracle (`terra1lnyecncq9akyk8nk0qlppgrq6yxktr68483ahryn457x9ap4ty2shupdsz`)
+**Target Contract:** ISM Multisig (`terra13l8gwanf37938wgfv5yktmfzxjwaj4ysn4gl96vj78xcqqxlcrgsll77zu`)
+
+**Executed Message:**
+```json
+{
+  "set_validators": {
+    "domain": 1399811149,
+    "threshold": 3,
+    "validators": [
+      "28464752829b3ea59a497fca0bdff575c534c3ff",
+      "2b7514a2f77bd86bbf093fe6bb67d8611f51c659",
+      "cb6bcbd0de155072a7ff486d9d7286b0f71dcc2d",
+      "4f977a59fdc2d9e39f6d780a84d5b4add1495a36",
+      "5450447aee7b544c462c9352bef7cad049b0c2dc"
+    ]
+  }
+}
+```
+
+**Parameter Explanation:**
+- `domain` (u32): Solana domain ID in Hyperlane protocol (1399811149 = Solana)
+- `threshold` (u8): Minimum number of signatures required (3 of 5 validators)
+- `validators` (HexBinary array): Array of 5 hexadecimal addresses (20 bytes each) of validators
+
+**Security:** With 3/5 threshold, the system tolerates up to 2 validators offline or malicious while still validating messages.
+
+---
+
+#### MESSAGE 4: Configure Remote Gas Data in IGP Oracle (All Chains)
+
+**Objective:** Defines token exchange rates and gas prices for domains 1 (Ethereum), 56 (BSC), and 1399811149 (Solana). This allows IGP to calculate how much gas to charge on the source chain (Terra) to cover execution costs on the destination chains.
+
+**Target Contract:** IGP Oracle (`terra1jx8m47zzxnfnkc79hs60m269n3wtg8z2c7f3vj4m4xf0zkq060nsxqkswz`)
 
 **Executed Message:**
 ```json
@@ -774,7 +850,17 @@ Each validator is an off-chain node that monitors messages and provides signatur
   "set_remote_gas_data_configs": {
     "configs": [
       {
+        "remote_domain": 1,
+        "token_exchange_rate": "1",
+        "gas_price": "50000000"
+      },
+      {
         "remote_domain": 56,
+        "token_exchange_rate": "1",
+        "gas_price": "50000000"
+      },
+      {
+        "remote_domain": 1399811149,
         "token_exchange_rate": "1",
         "gas_price": "50000000"
       }
@@ -784,29 +870,32 @@ Each validator is an off-chain node that monitors messages and provides signatur
 ```
 
 **Parameter Explanation:**
-- `remote_domain` (u32): Remote chain domain ID (56 = BSC)
-- `token_exchange_rate` (Uint128): Exchange rate between LUNC and BNB (1:1 in this case, adjustable)
-- `gas_price` (Uint128): Gas price on BSC (50 Gwei simplified)
+- `remote_domain` (u32): Remote chain domain ID
+  - Domain 1 = Ethereum
+  - Domain 56 = BSC
+  - Domain 1399811149 = Solana
+- `token_exchange_rate` (Uint128): Exchange rate between LUNC and destination chain token (1:1 in this case, adjustable)
+- `gas_price` (Uint128): Gas price on destination chain (50 Gwei simplified)
 
 **Cost Calculation:**
 ```
 Cost = (gas_used_on_destination × gas_price × token_exchange_rate)
 ```
 
-**Example:** If a transaction on BSC uses 200k gas:
+**Example:** If a transaction uses 200k gas:
 ```
-Cost = 200000 × 50000000 × 1 = 10000000000000
+Cost = 200000 × 50000000 × 1 = 10000000000000 units
 ```
 
-**Note:** These values should be updated periodically to reflect actual market prices.
+**Note:** These values should be updated periodically to reflect actual market prices for each chain.
 
 ---
 
-#### MESSAGE 3: Set IGP Route to Oracle
+#### MESSAGE 5: Set IGP Routes to Oracle (All Chains)
 
-**Objective:** Configures IGP to use IGP Oracle when calculating gas costs for domain 56 (BSC). This route connects IGP to the Oracle that provides updated price and exchange rate data.
+**Objective:** Configures IGP to use IGP Oracle when calculating gas costs for domains 1 (Ethereum), 56 (BSC), and 1399811149 (Solana). These routes connect IGP to the Oracle that provides updated price and exchange rate data.
 
-**Target Contract:** IGP (`terra1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8stalnth`)
+**Target Contract:** IGP (`terra1av3qg7rrtwu2anudw8u7d2ncv4f0826yxrndw9esvrp4jdnsmyjqqs62u0`)
 
 **Executed Message:**
 ```json
@@ -815,8 +904,16 @@ Cost = 200000 × 50000000 × 1 = 10000000000000
     "set_routes": {
       "set": [
         {
+          "domain": 1,
+          "route": "terra1jx8m47zzxnfnkc79hs60m269n3wtg8z2c7f3vj4m4xf0zkq060nsxqkswz"
+        },
+        {
           "domain": 56,
-          "route": "terra1lnyecncq9akyk8nk0qlppgrq6yxktr68483ahryn457x9ap4ty2shupdsz"
+          "route": "terra1jx8m47zzxnfnkc79hs60m269n3wtg8z2c7f3vj4m4xf0zkq060nsxqkswz"
+        },
+        {
+          "domain": 1399811149,
+          "route": "terra1jx8m47zzxnfnkc79hs60m269n3wtg8z2c7f3vj4m4xf0zkq060nsxqkswz"
         }
       ]
     }
@@ -825,19 +922,22 @@ Cost = 200000 × 50000000 × 1 = 10000000000000
 ```
 
 **Parameter Explanation:**
-- `domain` (u32): Remote chain domain ID (56 = BSC)
-- `route` (string): IGP Oracle address that provides gas data for BSC
+- `domain` (u32): Remote chain domain ID
+  - Domain 1 = Ethereum
+  - Domain 56 = BSC
+  - Domain 1399811149 = Solana
+- `route` (string): IGP Oracle address that provides gas data (same Oracle for all chains)
 
 **Operation Flow:**
 1. IGP receives gas payment from user
-2. IGP queries Oracle via configured route
-3. Oracle returns gas price and exchange rate
+2. IGP queries Oracle via configured route for the destination chain
+3. Oracle returns gas price and chain-specific exchange rate
 4. IGP calculates total cost
 5. IGP validates if payment is sufficient
 
 ---
 
-#### MESSAGE 4: Set Default ISM in Mailbox
+#### MESSAGE 6: Set Default ISM in Mailbox
 
 **Objective:** Configures the default ISM (Interchain Security Module) that will be used by the Mailbox to validate received messages. ISM Routing allows using different validation strategies per source domain.
 
@@ -853,7 +953,7 @@ Cost = 200000 × 50000000 × 1 = 10000000000000
 ```
 
 **Parameter Explanation:**
-- `ism` (string): ISM Routing address (which internally routes to ISM Multisig for BSC)
+- `ism` (string): ISM Routing address (which internally routes to appropriate ISM Multisig based on source chain)
 
 **Validation Flow:**
 ```
@@ -861,9 +961,12 @@ Message received
     ↓
 Mailbox queries default ISM (ISM Routing)
     ↓
-ISM Routing directs to ISM Multisig (if origin = BSC)
+ISM Routing checks origin and directs to appropriate ISM Multisig:
+    ├─► Origin = Ethereum (domain 1) → ISM Multisig ETH (6/9 threshold)
+    ├─► Origin = BSC (domain 56) → ISM Multisig BSC (2/6 threshold)
+    └─► Origin = Solana (domain 1399811149) → ISM Multisig SOL (3/5 threshold)
     ↓
-ISM Multisig validates signatures (2/6 threshold)
+ISM Multisig validates signatures according to threshold
     ↓
 If valid: message is processed
 If invalid: message is rejected
@@ -873,7 +976,7 @@ If invalid: message is rejected
 
 ---
 
-#### MESSAGE 5: Set Default Hook in Mailbox
+#### MESSAGE 7: Set Default Hook in Mailbox
 
 **Objective:** Configures the default Hook that will be executed when sending messages. Hook Aggregate #1 combines Merkle Tree Hook (for proofs) and IGP (for payment).
 
@@ -914,7 +1017,7 @@ Message emitted as event
 
 ---
 
-#### MESSAGE 6: Set Required Hook in Mailbox
+#### MESSAGE 8: Set Required Hook in Mailbox
 
 **Objective:** Configures the mandatory Hook that will ALWAYS be executed when sending messages, regardless of custom hooks specified by the sender. Hook Aggregate #2 combines Hook Pausable (emergency) and Hook Fee (monetization).
 
@@ -965,17 +1068,18 @@ After execution of this proposal, the Hyperlane system will be configured to:
 
 | Component | Configuration | Benefit |
 |-----------|---------------|---------|
-| **🔐 Security** | Validate BSC messages using 2/6 multisig | Fault and attack resistance |
-| **⛽ Payment** | Calculate costs via IGP + Oracle | Relayers properly compensated |
+| **🔐 Security** | Validate messages using multisig:<br>- Ethereum: 6/9 validators<br>- BSC: 2/6 validators<br>- Solana: 3/5 validators | Multi-chain fault and attack resistance |
+| **⛽ Payment** | Calculate costs via IGP + Oracle (3 chains) | Relayers properly compensated |
 | **🌳 Proofs** | Maintain Merkle tree | Cryptographic proofs of sending |
 | **⏸️ Control** | Emergency pause via Hook Pausable | Quick incident response |
 | **💰 Monetization** | Fee of 0.283215 LUNC via Hook Fee | Spam prevention + funding |
 
 **Final Status:**
-- ✅ System ready to send messages Terra → BSC
-- ✅ System ready to receive messages BSC → Terra
-- ✅ Security validation configured (2/6 multisig)
-- ✅ Gas payment configured (Oracle + IGP)
+- ✅ System ready to send/receive messages Terra ↔ Ethereum
+- ✅ System ready to send/receive messages Terra ↔ BSC
+- ✅ System ready to send/receive messages Terra ↔ Solana
+- ✅ Security validation configured (multisig per chain)
+- ✅ Gas payment configured for all chains (Oracle + IGP)
 - ✅ Protections activated (Pausable + Fee)
 
 ---
@@ -991,11 +1095,13 @@ After complete configuration, the Hyperlane system will have the following archi
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
 │  Default ISM: ISM Routing                                                │
-│    └─► Domain 56 (BSC) → ISM Multisig (2/6 validators)                  │
+│    ├─► Domain 1 (Ethereum) → ISM Multisig (6/9 validators)              │
+│    ├─► Domain 56 (BSC) → ISM Multisig (2/6 validators)                  │
+│    └─► Domain 1399811149 (Solana) → ISM Multisig (3/5 validators)       │
 │                                                                           │
 │  Default Hook: Hook Aggregate #1                                         │
 │    ├─► Hook Merkle (inclusion proofs)                                   │
-│    └─► IGP (payment) → Oracle (BSC prices)                              │
+│    └─► IGP (payment) → Oracle (Ethereum/BSC/Solana prices)              │
 │                                                                           │
 │  Required Hook: Hook Aggregate #2                                        │
 │    ├─► Hook Pausable (emergency control)                                │
